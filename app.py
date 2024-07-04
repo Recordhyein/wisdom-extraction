@@ -34,7 +34,7 @@ def get_wisdom():
     )
     wisdom_items = parse_anthropic_response(response.completion)
     return jsonify(wisdom_items)
-   except Exception as e:
+  except Exception as e:
         print(f"Error in get_wisdom: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
