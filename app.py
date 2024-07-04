@@ -8,7 +8,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///wisdom.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-anthropic_api_key = os.environ.get('ANTHROPIC_API_KEY')
+anthropic_api_key = os.environ.get('sk-ant-api03--Nx...zgAA')
 client = anthropic.Client(api_key=anthropic_api_key)
 
 class Reflection(db.Model):
@@ -23,6 +23,7 @@ def index():
 
 @app.route('/api/wisdom', methods=['GET'])
 def get_wisdom():
+  try:
     query = request.args.get('query', '')
     prompt = f"사용자의 질문: '{query}'\n\n이 질문에 관련된 3개의 명언이나 책 구절을 제시해주세요. 각 항목은 '내용'과 '출처'를 포함해야 합니다."
     response = client.completion(
@@ -33,6 +34,9 @@ def get_wisdom():
     )
     wisdom_items = parse_anthropic_response(response.completion)
     return jsonify(wisdom_items)
+   except Exception as e:
+        print(f"Error in get_wisdom: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 def parse_anthropic_response(response):
     lines = response.strip().split('\n')
