@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지혜 시추</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>지혜 시추</h1>
+        <input type="text" id="questionInput" placeholder="질문을 입력하세요">
+        <button onclick="searchWisdom()">지혜 찾기</button>
+        <div id="wisdomContainer"></div>
+        <div id="reflectionContainer" style="display: none;">
+            <textarea id="reflectionInput" rows="3" maxlength="50" placeholder="감상을 입력하세요 (50자 이내)"></textarea>
+            <button onclick="submitReflection()">제출</button>
+        </div>
+    </div>
+    <div id="cloudContainer"></div>
+
+    <script>
+        let selectedWisdom = null;
+
+        function searchWisdom() {
+            const question = document.getElementById('questionInput').value;
+            fetch(`/api/wisdom?query=${encodeURIComponent(question)}`)
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('wisdomContainer');
+                    container.innerHTML = '';
+                    data.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'wisdom-item';
+                        div.textContent = `${item.content} - ${item.author}`;
+                        div.onclick = () => selectWisdom(item);
+                        container.appendChild(div);
+                        animateWisdom(div);
+                    });
+                });
+        }
+
+        function animateWisdom(element) {
+            element.style.opacity = '0';
+            element.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                element.style.transition = 'opacity 0.5s, transform 0.5s';
+                element.style.opacity = '1';
+                element.style.transform = 'translateY(0)';
+            }, 10);
+        }
+
+        function selectWisdom(wisdom) {
+            selectedWisdom = wisdom;
+            document.querySelectorAll('.wisdom-item').forEach(item => {
+                item.style.boxShadow = 'none';
+            });
+            event.target.style.boxShadow = '0 0 10px #005a8c';
+            document.getElementById('reflectionContainer').style.display = 'block';
+        }
+
+        function submitReflection() {
+            const reflection = document.getElementById('reflectionInput').value;
+            if (reflection.length > 50) {
+                alert('감상은 50자 이내로 입력해주세요.');
+                return;
+            }
+            fetch('/api/save-reflection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    wisdom: selectedWisdom,
+                    reflection: reflection
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    animateReflection();
+                }
+            });
+        }
+
+        function animateReflection() {
+            const container = document.querySelector('.container');
+            const bubble = document.createElement('div');
+            bubble.style.position = 'absolute';
+            bubble.style.left = '50%';
+            bubble.style.bottom = '0';
+            bubble.style.width = '20px';
+            bubble.style.height = '20px';
+            bubble.style.borderRadius = '50%';
+            bubble.style.backgroundColor = '#005a8c';
+            bubble.style.transition = 'all 2s';
+            container.appendChild(bubble);
+
+            setTimeout(() => {
+                bubble.style.bottom = '100%';
+                bubble.style.width = '100px';
+                bubble.style.height = '100px';
+                bubble.style.opacity = '0';
+            }, 10);
+
+            setTimeout(() => {
+                bubble.remove();
+                createCloud();
+            }, 2000);
+        }
+
+        function createCloud() {
+            const cloud = document.createElement('div');
+            cloud.style.position = 'absolute';
+            cloud.style.top = '10%';
+            cloud.style.left = '50%';
+            cloud.style.width = '100px';
+            cloud.style.height = '50px';
+            cloud.style.backgroundColor = '#ffffff';
+            cloud.style.borderRadius = '25px';
+            document.getElementById('cloudContainer').appendChild(cloud);
+
+            setTimeout(() => {
+                createRain(cloud);
+            }, 1000);
+        }
+
+        function createRain(cloud) {
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const raindrop = document.createElement('div');
+                    raindrop.className = 'raindrop';
+                    raindrop.style.left = `${cloud.offsetLeft + Math.random() * 100}px`;
+                    raindrop.style.top = `${cloud.offsetTop + 50}px`;
+                    document.getElementById('cloudContainer').appendChild(raindrop);
+
+                    raindrop.animate([
+                        { transform: 'translateY(0)' },
+                        { transform: 'translateY(100vh)' }
+                    ], {
+                        duration: 1000,
+                        easing: 'linear'
+                    }).onfinish = () => raindrop.remove();
+                }, i * 100);
+            }
+
+            setTimeout(() => {
+                cloud.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
